@@ -136,7 +136,8 @@ class BlueSkyShortcuts {
                 action: this.focusSearch.bind(this)
             },
             [config.shortcuts.expandPhoto]: {
-                action: this.expandPhoto.bind(this)
+                action: this.expandPhoto.bind(this),
+                allowedModifiers: ['shift']
             },
             [config.shortcuts.loadMore]: {
                 action: this.loadMore.bind(this)
@@ -618,16 +619,44 @@ class BlueSkyShortcuts {
         return false;
     }
 
-    expandPhoto() {
+    expandPhoto(event) {
         const { currentPost } = this.appState.state;
         if (!currentPost) return;
 
-        const photoLink = currentPost.querySelector('img[src*="feed_thumbnail"]:not(a img)');
+        if (event.shiftKey) {
+            this.collapseContent();
+            return;
+        }
 
+        const revealControl = Array.from(currentPost.querySelectorAll('button, [role="button"], a, div')).find(el => (el.textContent || '').trim() === 'Show');
+        if (revealControl) {
+            const toClick = revealControl.tagName === 'DIV' && revealControl.parentElement
+                ? revealControl.parentElement
+                : revealControl;
+            toClick.click();
+            return;
+        }
+
+        const photoLink = currentPost.querySelector('img[src*="feed_thumbnail"]:not(a img)');
         if (photoLink) {
             photoLink.click();
         } else {
-            this.logger.warn('No valid photo link found');
+            this.logger.warn('No valid photo or reveal control found');
+        }
+    }
+
+    collapseContent() {
+        const { currentPost } = this.appState.state;
+        if (!currentPost) return;
+
+        const hideControl = Array.from(currentPost.querySelectorAll('button, [role="button"], a, div')).find(el => (el.textContent || '').trim() === 'Hide');
+        if (hideControl) {
+            const toClick = hideControl.tagName === 'DIV' && hideControl.parentElement
+                ? hideControl.parentElement
+                : hideControl;
+            toClick.click();
+        } else {
+            this.logger.warn('No hide control found');
         }
     }
 
